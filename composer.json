@@ -1,0 +1,21 @@
+{
+    "name": "kimhuang/yii2-fx-code-gen",
+    "description": "Code gen for fanxing by kimhuang",
+    "type": "yii2-extension",
+    "keywords": ["yii2","kimhuang","code-gen"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kimhuang",
+            "email": "hgkmail@163.com"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "kimhuang\\fx\\": ""
+        }
+    }
+}

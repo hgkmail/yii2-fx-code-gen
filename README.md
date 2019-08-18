@@ -1,6 +1,6 @@
-Code gen for fanxing
+Code Generator for Fanxing
 ====================
-Code gen for fanxing by kimhuang
+Code Generator for Fanxing by kimhuang
 
 Installation
 ------------

@@ -8,11 +8,6 @@ use yii\gii\generators\model\Generator;
 
 echo $form->field($generator, 'tableName')->textInput(['table_prefix' => $generator->getTablePrefix()]);
 echo $form->field($generator, 'modelClass');
-echo $form->field($generator, 'customInfo');
-//echo $form->field($generator, 'generateOpLog')->checkbox();
-//echo $form->field($generator, 'opLogClass');
-
-/*
 echo $form->field($generator, 'standardizeCapitals')->checkbox();
 echo $form->field($generator, 'ns');
 echo $form->field($generator, 'baseClass');
@@ -32,4 +27,3 @@ echo $form->field($generator, 'queryBaseClass');
 echo $form->field($generator, 'enableI18N')->checkbox();
 echo $form->field($generator, 'messageCategory');
 echo $form->field($generator, 'useSchemaName')->checkbox();
-*/

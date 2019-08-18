@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace kimhuang\fx\generator\model;
+namespace yii\gii\generators\model;
 
 use Yii;
 use yii\base\InvalidConfigException;
@@ -34,7 +34,6 @@ class Generator extends \yii\gii\Generator
     public $ns = 'app\models';
     public $tableName;
     public $modelClass;
-    public $customInfo = '{}'; // json格式
     public $baseClass = 'yii\db\ActiveRecord';
     public $generateRelations = self::RELATIONS_ALL;
     public $generateRelationsFromCurrentSchema = true;
@@ -46,15 +45,14 @@ class Generator extends \yii\gii\Generator
     public $queryNs = 'app\models';
     public $queryClass;
     public $queryBaseClass = 'yii\db\ActiveQuery';
-    public $generateOpLog = false;
-    public $opLogClass;
+
 
     /**
      * {@inheritdoc}
      */
     public function getName()
     {
-        return '🚀Fx Admin Code Generator';
+        return 'Model Generator';
     }
 
     /**
@@ -71,11 +69,11 @@ class Generator extends \yii\gii\Generator
     public function rules()
     {
         return array_merge(parent::rules(), [
-            [['db', 'ns', 'tableName', 'modelClass', 'baseClass', 'queryNs', 'queryClass', 'opLogClass', 'queryBaseClass'], 'filter', 'filter' => 'trim'],
+            [['db', 'ns', 'tableName', 'modelClass', 'baseClass', 'queryNs', 'queryClass', 'queryBaseClass'], 'filter', 'filter' => 'trim'],
             [['ns', 'queryNs'], 'filter', 'filter' => function ($value) { return trim($value, '\\'); }],
 
             [['db', 'ns', 'tableName', 'baseClass', 'queryNs', 'queryBaseClass'], 'required'],
-            [['db', 'modelClass', 'queryClass', 'opLogClass'], 'match', 'pattern' => '/^\w+$/', 'message' => 'Only word characters are allowed.'],
+            [['db', 'modelClass', 'queryClass'], 'match', 'pattern' => '/^\w+$/', 'message' => 'Only word characters are allowed.'],
             [['ns', 'baseClass', 'queryNs', 'queryBaseClass'], 'match', 'pattern' => '/^[\w\\\\]+$/', 'message' => 'Only word characters and backslashes are allowed.'],
             [['tableName'], 'match', 'pattern' => '/^([\w ]+\.)?([\w\* ]+)$/', 'message' => 'Only word characters, and optionally spaces, an asterisk and/or a dot are allowed.'],
             [['db'], 'validateDb'],
@@ -85,10 +83,9 @@ class Generator extends \yii\gii\Generator
             [['baseClass'], 'validateClass', 'params' => ['extends' => ActiveRecord::className()]],
             [['queryBaseClass'], 'validateClass', 'params' => ['extends' => ActiveQuery::className()]],
             [['generateRelations'], 'in', 'range' => [self::RELATIONS_NONE, self::RELATIONS_ALL, self::RELATIONS_ALL_INVERSE]],
-            [['generateLabelsFromComments', 'useTablePrefix', 'useSchemaName', 'generateQuery', 'generateOpLog', 'generateRelationsFromCurrentSchema'], 'boolean'],
+            [['generateLabelsFromComments', 'useTablePrefix', 'useSchemaName', 'generateQuery', 'generateRelationsFromCurrentSchema'], 'boolean'],
             [['enableI18N', 'standardizeCapitals'], 'boolean'],
             [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
-	        [['customInfo'], 'safe'],
         ]);
     }
 
@@ -108,13 +105,10 @@ class Generator extends \yii\gii\Generator
             'generateRelationsFromCurrentSchema' => 'Generate Relations from Current Schema',
             'generateLabelsFromComments' => 'Generate Labels from DB Comments',
             'generateQuery' => 'Generate ActiveQuery',
-            'generateOpLog' => 'Generate Operation Log Class',
             'queryNs' => 'ActiveQuery Namespace',
             'queryClass' => 'ActiveQuery Class',
-            'opLogClass' => 'Operation Log Class',
             'queryBaseClass' => 'ActiveQuery Base Class',
             'useSchemaName' => 'Use Schema Name',
-	        'customInfo' => 'Custom Info (JSON格式, https://jsoneditoronline.org )',
         ]);
     }
 
@@ -154,14 +148,11 @@ class Generator extends \yii\gii\Generator
             'useSchemaName' => 'This indicates whether to include the schema name in the ActiveRecord class
                 when it\'s auto generated. Only non default schema would be used.',
             'generateQuery' => 'This indicates whether to generate ActiveQuery for the ActiveRecord class.',
-            'generateOpLog' => 'This indicates whether to generate Operation Log Class for the ActiveRecord class.',
             'queryNs' => 'This is the namespace of the ActiveQuery class to be generated, e.g., <code>app\models</code>',
             'queryClass' => 'This is the name of the ActiveQuery class to be generated. The class name should not contain
                 the namespace part as it is specified in "ActiveQuery Namespace". You do not need to specify the class name
                 if "Table Name" ends with asterisk, in which case multiple ActiveQuery classes will be generated.',
             'queryBaseClass' => 'This is the base class of the new ActiveQuery class. It should be a fully qualified namespaced class name.',
-	        'customInfo' => '自定义设置 (JSON格式)',
-	        'opLogClass' => 'Operation Log Class Name',
         ]);
     }
 
@@ -188,7 +179,7 @@ class Generator extends \yii\gii\Generator
     public function requiredTemplates()
     {
         // @todo make 'query.php' to be required before 2.1 release
-        return ['model.php', 'info.php'/*, 'query.php'*/];
+        return ['model.php'/*, 'query.php'*/];
     }
 
     /**
@@ -196,8 +187,7 @@ class Generator extends \yii\gii\Generator
      */
     public function stickyAttributes()
     {
-        return array_merge(parent::stickyAttributes(), ['ns', 'db', 'baseClass', 'generateRelations', 'generateLabelsFromComments', 'queryNs', 'queryBaseClass', 'useTablePrefix',
-	        'generateQuery', 'generateOpLog']);
+        return array_merge(parent::stickyAttributes(), ['ns', 'db', 'baseClass', 'generateRelations', 'generateLabelsFromComments', 'queryNs', 'queryBaseClass', 'useTablePrefix', 'generateQuery']);
     }
 
     /**
@@ -225,7 +215,6 @@ class Generator extends \yii\gii\Generator
         $files = [];
         $relations = $this->generateRelations();
         $db = $this->getDbConnection();
-        $custInfo = json_decode($this->customInfo, true);
         foreach ($this->getTableNames() as $tableName) {
             // model :
             $modelClassName = $this->generateClassName($tableName);
@@ -240,57 +229,21 @@ class Generator extends \yii\gii\Generator
                 'labels' => $this->generateLabels($tableSchema),
                 'rules' => $this->generateRules($tableSchema),
                 'relations' => isset($relations[$tableName]) ? $relations[$tableName] : [],
-	            'customInfo' => $custInfo,
             ];
-            // model
-//            $files[] = new CodeFile(
-//                Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . '.php',
-//                $this->render('model.php', $params)
-//            );
+            $files[] = new CodeFile(
+                Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/' . $modelClassName . '.php',
+                $this->render('model.php', $params)
+            );
+
             // query :
-//            if ($queryClassName) {
-//                $params['className'] = $queryClassName;
-//                $params['modelClassName'] = $modelClassName;
-//                $files[] = new CodeFile(
-//                    Yii::getAlias('@' . str_replace('\\', '/', $this->queryNs)) . '/generate/' . $queryClassName . '.php',
-//                    $this->render('query.php', $params)
-//                );
-//            }
-	        // render info.php
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . '_info.html',
-		        $this->render('info.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . 'DS.php',
-		        $this->render('FxAdminDS.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . 'BL.php',
-		        $this->render('FxAdminBL.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . '.add.php',
-		        $this->render('fxAdmin.add.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . '.edit.php',
-		        $this->render('fxAdmin.edit.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . '.lst.php',
-		        $this->render('fxAdmin.lst.php', $params)
-	        );
-
-	        $files[] = new CodeFile(
-		        Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/generate/' . $modelClassName . 'Action.php',
-		        $this->render('FxAdminAction.php', $params)
-	        );
+            if ($queryClassName) {
+                $params['className'] = $queryClassName;
+                $params['modelClassName'] = $modelClassName;
+                $files[] = new CodeFile(
+                    Yii::getAlias('@' . str_replace('\\', '/', $this->queryNs)) . '/' . $queryClassName . '.php',
+                    $this->render('query.php', $params)
+                );
+            }
         }
 
         return $files;
